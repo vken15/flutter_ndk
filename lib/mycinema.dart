@@ -18,9 +18,18 @@ class MyCinemaScreen extends StatefulWidget {
   State<MyCinemaScreen> createState() => _MyCinemaScreenState();
 }
 
-class _MyCinemaScreenState extends State<MyCinemaScreen> {
+class _MyCinemaScreenState extends State<MyCinemaScreen>
+    with SingleTickerProviderStateMixin {
   int _current = 0;
   final CarouselController _controller = CarouselController();
+  late TabController tabController;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    tabController = TabController(length: 2, vsync: this);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +38,7 @@ class _MyCinemaScreenState extends State<MyCinemaScreen> {
           child: SliderDrawer(
         appBar: SliderAppBar(
           appBarColor: Colors.white,
+          appBarPadding: EdgeInsets.only(right: 8),
           title: const Text("MY CINEMA",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           trailing: Row(
@@ -44,59 +54,134 @@ class _MyCinemaScreenState extends State<MyCinemaScreen> {
           ),
         ),
         slider: Center(),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              alignment: AlignmentDirectional.bottomCenter,
-              children: [
-                CarouselSlider(
-                  carouselController: _controller,
-                  options: CarouselOptions(
-                      height: 250,
-                      viewportFraction: 1,
-                      autoPlay: true,
-                      autoPlayInterval: Duration(seconds: 5),
-                      onPageChanged: (index, reason) {
-                        setState(() {
-                          _current = index;
-                        });
-                      }),
-                  items: imgList.map((i) {
-                    return Builder(
-                      builder: (BuildContext context) {
-                        return Container(
-                            width: MediaQuery.of(context).size.width,
-                            margin: EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(color: Colors.amber),
-                            child: Image.network(i, fit: BoxFit.cover));
-                      },
-                    );
-                  }).toList(),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildBanner(),
+              _buildSearch(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: const Text("Lịch chiếu", style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 25,
+                ),),
+              ),
+              TabBar(
+                padding: const EdgeInsets.all(16),
+                controller: tabController,
+                tabs: [
+                  Tab(
+                    child: Text("Đang chiếu"),
+                  ),
+                  Tab(
+                    child: Text("Sắp chiếu"),
+                  ),
+                ],
+              ),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: 500,
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: imgList.asMap().entries.map((entry) {
-                    return GestureDetector(
-                      onTap: () => _controller.animateToPage(entry.key),
-                      child: Container(
-                        width: 12.0,
-                        height: 12.0,
-                        margin: EdgeInsets.symmetric(
-                            vertical: 8.0, horizontal: 4.0),
-                        decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white.withOpacity(
-                                        _current == entry.key ? 1 : 0.5)),
-                      ),
-                    );
-                  }).toList(),
+                child: TabBarView(controller: tabController, children: [
+                  Icon(Icons.directions_car),
+                  Icon(Icons.directions_transit),
+                ]),
+              )
+              /*
+              Container(
+                margin: EdgeInsets.all(16),
+                padding: EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.all(Radius.circular(16)),
                 ),
-              ],
-            ),
-          ],
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {},
+                      child: Text("Đang chiếu"),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {},
+                      child: Text("Sắp chiếu"),
+                    ),
+                  ],
+                ),
+              )*/
+            ],
+          ),
         ),
       )),
+    );
+  }
+
+  /// Thanh tìm kiếm
+  Container _buildSearch() {
+    return Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
+        child: TextFormField(
+          decoration: const InputDecoration(
+              hintText: "Nhập phim cần tìm",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(16)),
+              ),
+              suffixIcon: Icon(Icons.search),
+              contentPadding: EdgeInsets.symmetric(horizontal: 12)),
+        ));
+  }
+
+  /// Banner
+  Stack _buildBanner() {
+    return Stack(
+      alignment: AlignmentDirectional.bottomCenter,
+      children: [
+        CarouselSlider(
+          carouselController: _controller,
+          options: CarouselOptions(
+              height: 250,
+              viewportFraction: 1,
+              autoPlay: true,
+              autoPlayInterval: Duration(seconds: 5),
+              onPageChanged: (index, reason) {
+                setState(() {
+                  _current = index;
+                });
+              }),
+          items: imgList.map((i) {
+            return Builder(
+              builder: (BuildContext context) {
+                return Container(
+                    width: MediaQuery.of(context).size.width,
+                    margin: EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(color: Colors.amber),
+                    child: Image.network(i, fit: BoxFit.cover));
+              },
+            );
+          }).toList(),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: imgList.asMap().entries.map((entry) {
+            return GestureDetector(
+              onTap: () => _controller.animateToPage(entry.key),
+              child: Container(
+                width: 12.0,
+                height: 12.0,
+                margin:
+                    const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white
+                        .withOpacity(_current == entry.key ? 1 : 0.5)),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }
